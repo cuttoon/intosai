@@ -7,3 +7,4 @@ media/
 .yarn.lock
 package-lock.json
 .env
+secret.sample.env
