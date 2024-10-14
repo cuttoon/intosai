@@ -1,4 +1,9 @@
-node_modules
-Postman
+.DS_Store
+*.swp
+coverage/
+node_modules/
+Postman/
+media/
+.yarn.lock
+package-lock.json
 .env
-media
