@@ -39,7 +39,7 @@ module.exports = {
           id: datavalidEmail.NUSU_ID,
           rol: datavalidEmail.NUSU_ROLID,
         };
-        const token = TokenSignup(payload, secret, "1h");
+        const token = TokenSignup(payload, secret, "30m");
 
         return res.status(200).send({
           IdCuenta: datavalidEmail.NUSU_ID,
@@ -62,7 +62,7 @@ module.exports = {
 
       let result = await userdbUser.createUser(newUser);
 
-      const token = TokenSignup({ id: result }, secret, "1h");
+      const token = TokenSignup({ id: result }, secret, "30m");
 
       res.status(200).json({
         message:
@@ -80,8 +80,19 @@ module.exports = {
 
       validatePassword(newPassword);
 
-      const decodedToken = jwt.verify(token, secret);
-      const userId = decodedToken.id;
+      let decodedToken;
+        try {
+            decodedToken = jwt.verify(token, secret);
+        } catch (err) {
+            if (err.name === "TokenExpiredError") {
+                return res.status(400).json({
+                    message: "Your reset link has expired. Please request a new one."
+                });
+            }
+            return res.status(400).json({ message: "Invalid token. Please try again." });
+        }
+
+        const userId = decodedToken.id;
 
       if (!ExisToken(userId)) {
         return res.status(400).json({ message: "Invalid or expired token" });
@@ -123,7 +134,7 @@ module.exports = {
         throw new Error(result.error);
       }
 
-      const token = TokenSignup({ id: userId }, secret, "1h");
+      const token = TokenSignup({ id: userId }, secret, "30m");
 
       res.status(200).json({
         message: "Please check your email to set your password.",

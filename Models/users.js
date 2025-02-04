@@ -14,28 +14,15 @@ const user = {
   ids: "number",
 };
 
-const sequentialCharacter = (password) => {
-  for (let i = 0; i < password.length - 2; i++) {
-    const charCode1 = password.charCodeAt(i);
-    const charCode2 = password.charCodeAt(i + 1);
-    const charCode3 = password.charCodeAt(i + 2);
-    if (charCode2 === charCode1 + 1 && charCode3 === charCode2 + 1) {
-      return true;
-    }
-  }
-  return false;
-};
-
 // Regex para la validación de la contraseña
-const passwordRegex = /^(?!.*(.)\1{2})(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*()\-_=+{};:,<.>]).{8,30}$/;
+const passwordRegex =
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*()\-_=+{};:,<.>])[\S]{8,20}$/;
 
 const validatePassword = (password) => {
   if (!password || !passwordRegex.test(password)) {
-    throw new Error("Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters. It cannot have more than two identical characters in a row.");
-  }
-
-  if(sequentialCharacter(password)){
-    throw new Error('Password cannot contain sequential characters (e.g., 123, abc).');
+    throw new Error(
+      "Password must contain at least 8 characters and a maximum of 20 characters, including at least one uppercase letter (A-Z), one lowercase letter (a-z), one digit (0-9), and one special character."
+    );
   }
 };
 
@@ -67,14 +54,23 @@ const validateObj = (validate, data) => {
         error[ele] = [`This field must be 1, 2, or 3`];
       }
 
-      if (ele === "correo" && !validator.validate(data[ele])) {
-        error[ele] = [`This field must be in email format`];
+      if (ele === "correo") {
+        if (!validator.validate(data[ele])) {
+          error[ele] = [`This field must be in email format.`];
+        }
+        if (data[ele].length > 60) {
+          error[ele] = [`This field must be a maximum of 60 characters.`];
+        }
       }
 
       if (ele === "clave" && !passwordRegex.test(data[ele])) {
         error[ele] = [
-          "Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters.",
+          "Password must contain at least 8 characters and a maximum of 20 characters, including at least one uppercase letter (A-Z), one lowercase letter (a-z), one digit (0-9), and one special character.",
         ];
+      }
+
+      if (["nombre", "apellido"].includes(ele) && data[ele].length > 40) {
+        error[ele] = [`This field must be a maximum of 40 characters.`];
       }
 
       if (validate[ele] !== typeof data[ele]) {
