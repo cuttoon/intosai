@@ -5,7 +5,11 @@ const auditoria = require('./Auditoria/AuditoriaRoute')
 const root = (app, next) => {
     const pkg = app.get('pkg');
     app.get('/', (req, res) => res.json({ name: pkg.name, version: pkg.version }));
-    app.all('*', (req, resp, nextAll) => nextAll(404));
+    app.all('*', (req, res, next) => {
+        const error = new Error('La ruta que intentas acceder no existe.');
+        error.statusCode = 404;
+        next(error);
+    });
     return next();
 };
 

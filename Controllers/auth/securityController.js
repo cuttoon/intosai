@@ -39,7 +39,7 @@ module.exports = {
           id: datavalidEmail.NUSU_ID,
           rol: datavalidEmail.NUSU_ROLID,
         };
-        const token = TokenSignup(payload, secret, "30m");
+        const token = TokenSignup(payload, secret, "2h");
 
         return res.status(200).send({
           IdCuenta: datavalidEmail.NUSU_ID,
@@ -66,7 +66,7 @@ module.exports = {
 
       res.status(200).json({
         message:
-          "User created successfully, please check your email to set your password.",
+          "Account created successfully, please check your email to set your password.",
         token: token,
         email: req.body.correo,
       });
@@ -81,22 +81,26 @@ module.exports = {
       validatePassword(newPassword);
 
       let decodedToken;
-        try {
-            decodedToken = jwt.verify(token, secret);
-        } catch (err) {
-            if (err.name === "TokenExpiredError") {
-                return res.status(400).json({
-                    message: "Your reset link has expired. Please request a new one."
-                });
-            }
-            return res.status(400).json({ message: "Invalid token. Please try again." });
+      try {
+        decodedToken = jwt.verify(token, secret);
+      } catch (err) {
+        if (err.name === "TokenExpiredError") {
+          return res.status(400).json({
+            message: "Your reset link has expired. Please request a new one.",
+          });
         }
-
-        const userId = decodedToken.id;
-
-      if (!ExisToken(userId)) {
-        return res.status(400).json({ message: "Invalid or expired token" });
       }
+
+      const userId = decodedToken.id;
+
+      const user = await userdb.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      /* if (!ExisToken(userId)) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      } */
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -104,9 +108,11 @@ module.exports = {
 
       TokenDestroy(userId);
 
-      res
-        .status(200)
-        .json({ message: "Password has been successfully reset." });
+      const successMessage = user.NUSU_NUMLOGIN === 0
+          ? "The password has been created successfully. You will receive an email confirming your created account so you can access the system."
+          : "Password has been successfully reset.";
+
+      res.status(200).json({ message: successMessage });
     } catch (error) {
       next(error);
     }

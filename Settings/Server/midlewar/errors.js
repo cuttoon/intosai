@@ -2,7 +2,7 @@ const httpErrors = {
     400: 'Bad request',
     401: 'Unauthorized',
     403: 'Forbidden',
-    404: 'Not found',
+    404: 'La ruta que intentas acceder no existe',
     500: 'Internal server error',
 };
   
@@ -12,16 +12,16 @@ const isKnownHTTPErrorStatus = (num) => {
 };
    
 
-module.exports = (err, req, resp, next) => {
-    const statusCode = (isKnownHTTPErrorStatus(err))
-        ? err
-        : err.statusCode || 500;
+module.exports = (err, req, res, next) => {
+    const statusCode = isKnownHTTPErrorStatus(err.statusCode) ? err.statusCode : 500;
+    const message = err.message || httpErrors[statusCode] || 'Error desconocido';
 
-    const message = err.message || httpErrors[statusCode] || err;
-  
+    console.log(statusCode, message)
+
+ 
     if (statusCode === 500) {
         console.error(statusCode, message);
     }  
-    resp.status(statusCode).json({ statusCode, message });
+    res.status(statusCode).json({ statusCode, message });
     next();
 };
