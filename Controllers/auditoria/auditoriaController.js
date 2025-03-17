@@ -409,20 +409,11 @@ module.exports = {
       // req.body.odsid = req.body.odsid ? req.body.odsid.map(Number) : [];
       // validateAuditoria(req.body);
 
-      req.body.paisid = Array.isArray(req.body.paisid)
-        ? req.body.paisid.length > 0
-          ? req.body.paisid[0]
-          : null
-        : req.body.paisid
-        ? parseInt(req.body.paisid)
-        : null;
+      // Eliminar duplicados antes de enviar al servicio
+      req.body.paisid = [...new Set([].concat(req.body.paisid).map(Number).filter(Boolean))];
+      req.body.odsid = [...new Set([].concat(req.body.odsid).map(Number).filter(Boolean))];
 
-      req.body.odsid =
-        Array.isArray(req.body.odsid) && req.body.odsid.length > 0
-          ? req.body.odsid[0]
-          : req.body.odsid
-          ? parseInt(req.body.odsid)
-          : null;
+          
 
       const dataEvent = Object.assign({}, req.body);
       console.log("Datos antes de enviar:", req.body);

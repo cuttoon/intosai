@@ -510,57 +510,71 @@ module.exports = {
     }
   },
   createReports: async (data) => {
-    console.log("data", data);
-    data.ids = { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT };
-    // data.paisid = { val: data.paisid, type: oracledb.NUMBER };
-    // data.odsid = { val: data.odsid, type: oracledb.NUMBER };
+    console.log("data antes de procesar:", data);
 
-    const newReport = await db.procedureExecute(
-      `BEGIN PG_SCAI_CONSULTA.pa_scai_create_informe(
-          :categoria,
-          :ffin,
-          :fini,
-          :ids,
-          :objetivo,
-          :resumen,
-          :tipo,
-          :titulo,
-          :usuario,
-          :publicacion,
-          :idioma,
-          :imagen,
-          :url,
-          :ambitoid,
-          :paisid,
-          :odsid
-      ); END;`,
-      data
-    );
+    const paisList = [].concat(data.paisid).filter(Boolean);
+    const odsList = [].concat(data.odsid).filter(Boolean);
 
-    console.log("newReport", newReport)
-    const reportId = newReport.ids;
+    let reportId = null;
 
-    console.log("reportId", reportId)
+    try {
+      const initialData = {
+        ...data,
+        paisid: paisList[0],
+        odsid: odsList[0],
+        ids: { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT },
+      };
 
-    if (data.paisid && data.paisid.length > 0) {
-      for (const paisId of data.paisid) {
+      console.log("Enviando datos al procedimiento:", initialData);
+      const newReport = await db.procedureExecute(
+        `BEGIN PG_SCAI_CONSULTA.pa_scai_create_informe(
+                        :categoria,
+                        :ffin,
+                        :fini,
+                        :ids,
+                        :objetivo,
+                        :resumen,
+                        :tipo,
+                        :titulo,
+                        :usuario,
+                        :publicacion,
+                        :idioma,
+                        :imagen,
+                        :url,
+                        :ambitoid,
+                        :paisid,
+                        :odsid
+                    ); END;`,
+        initialData
+      );
+
+      reportId = newReport.ids;
+      console.log("Nuevo ID para auditoria:", reportId);
+
+      for (const paisId of paisList) {
         await db.simpleExecute(
-          `INSERT INTO SCAI_PARTICIPANTE (nnte_reportid, nnte_ambitoid, nnte_paisid) VALUES (:ids, :ambitoid, :paisid)`,
+          `INSERT INTO SCAI_PARTICIPANTE (nnte_reportid, nnte_ambitoid, nnte_paisid) 
+                 VALUES (:ids, :ambitoid, :paisid)`,
           { ids: reportId, ambitoid: data.ambitoid, paisid: paisId },
           { autoCommit: true }
         );
       }
-    }
-    if (Array.isArray(data.odsid) && data.odsid.length > 0) {
-      for (const odsid of data.odsid) {
+
+      const duplicate = odsList.slice(1);
+
+      for (const odsId of duplicate) {
         await db.simpleExecute(
-          `INSERT INTO SCAI_AUDITORIA_ODS (naod_reportid, naod_odsid) VALUES (:ids, :odsid)`,
-          { ids: reportId, odsid },
+          `INSERT INTO SCAI_AUDITORIA_ODS (naod_reportid, naod_odsid) 
+                 VALUES (:ids, :odsid)`,
+          { ids: reportId, odsid: odsId },
           { autoCommit: true }
         );
       }
-    }
 
-    return reportId;
+      return reportId;
+    } catch (error) {
+      console.error("Error al ejecutar el procedimiento:", error);
+      throw error;
+    }
   },
 };
