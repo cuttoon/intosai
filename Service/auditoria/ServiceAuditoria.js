@@ -323,8 +323,8 @@ module.exports = {
     try {
       console.log("data.ids", data.ids);
       data.ids = { type: oracledb.NUMBER, dir: oracledb.BIND_OUT };
-      data.informe = {val: data.informe ? parseInt(data.informe) : null};
-      data.pais = {val: data.pais ? parseInt(data.pais) : null};
+      data.informe = { val: data.informe ? parseInt(data.informe) : null };
+      data.pais = { val: data.pais ? parseInt(data.pais) : null };
       console.log("data", data);
       const result = await db.procedureExecute(
         `BEGIN PG_SCAI_CONSULTA.PA_SCAI_INSERT_REPORT(
@@ -375,7 +375,7 @@ module.exports = {
   },
   createAuditoria: async (data) => {
     data.ids = { type: oracledb.NUMBER, dir: oracledb.BIND_OUT };
-    data.imagen = {val: data.imagen ? parseInt(data.imagen) : null};
+    data.imagen = { val: data.imagen ? parseInt(data.imagen) : null };
     const newEvent = await db.procedureExecute(
       `BEGIN PG_SCAI_CONSULTA.PA_SCAI_INSERT_AUDITORIA(
             :categoria,
@@ -415,5 +415,152 @@ module.exports = {
       data
     );
     return newEvent.ids;
+  },
+  createReport: async (data) => {
+    try {
+      data.imagen = { val: data.imagen ? parseInt(data.imagen) : null };
+      data.ids = { type: oracledb.NUMBER, dir: oracledb.BIND_OUT };
+      console.log("data antes de ejecutar procedimiento:", data);
+      const newAudit = await db.procedureExecute(
+        `BEGIN PG_SCAI_CONSULTA.PA_SCAI_INSERT_AUDITORIA(
+              :categoria,
+              :ffin,
+              :fini,
+              :ids,
+              :imagen,
+              :objetivo,
+              :resumen,
+              :tipo,
+              :titulo,
+              :usuario            
+              ); END;`,
+        data
+      );
+      console.log("Resultado de la inserción:", newAudit);
+      const auditoriaId = newAudit.ids;
+      console.log("auditoriaId", auditoriaId);
+
+      data.participanteId = { type: oracledb.NUMBER, dir: oracledb.BIND_OUT };
+      await db.procedureExecute(
+        `BEGIN PG_SCAI_CONSULTA.PA_SCAI_INSERT_PARTICIPANTE(
+              :participanteId, 
+              :auditoriaId, 
+              :ambitId, 
+              :paisId, 
+              :entidad, 
+              :otroId, 
+              :rolId
+        ); END;`,
+        {
+          participanteId: data.participanteId,
+          auditoriaId: auditoriaId,
+          ambitId: data.ambitId,
+          paisId: data.paisId,
+          entidad: data.entidad || null,
+          otroId: data.otroId || null,
+          rolId: data.rolId || null,
+        }
+      );
+
+      const participanteId = data.participanteId;
+      console.log("participanteId", participanteId);
+
+      data.reportId = { type: oracledb.NUMBER, dir: oracledb.BIND_OUT };
+      data.informe = { val: data.informe ? parseInt(data.informe) : null };
+      data.pais = { val: data.pais ? parseInt(data.pais) : null };
+
+      await db.procedureExecute(
+        `BEGIN PG_SCAI_CONSULTA.PA_SCAI_INSERT_REPORT(
+                    :publicacion,
+                    :idioma,
+                    :reportId,
+                    :imagen,
+                    :informe,
+                    :pais,
+                    :report,
+                    :url
+                    ); END;`,
+        data
+      );
+
+      const reportId = data.reportId;
+
+      console.log("reportId", reportId);
+
+      if (data.odsList && data.odsList.length > 0) {
+        await db.manyExecute(
+          `INSERT INTO SCAI_AUDITORIA_ODS(naod_odsid, naod_reportid) 
+           VALUES (:ods_id, :report_id)`,
+          data.odsList.map((ods) => ({
+            ods_id: ods.ods_id ? parseInt(ods.ods_id) : ods.ods_id,
+            report_id: auditoriaId,
+          }))
+        );
+      }
+
+      return {
+        message: "Informe creado",
+        auditoriaId,
+        participanteId,
+        reportId,
+      };
+    } catch (error) {
+      console.error("Error al crear auditoría:", error);
+      throw new Error("No se pudo crear la auditoría");
+    }
+  },
+  createReports: async (data) => {
+    console.log("data", data);
+    data.ids = { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT };
+    // data.paisid = { val: data.paisid, type: oracledb.NUMBER };
+    // data.odsid = { val: data.odsid, type: oracledb.NUMBER };
+
+    const newReport = await db.procedureExecute(
+      `BEGIN PG_SCAI_CONSULTA.pa_scai_create_informe(
+          :categoria,
+          :ffin,
+          :fini,
+          :ids,
+          :objetivo,
+          :resumen,
+          :tipo,
+          :titulo,
+          :usuario,
+          :publicacion,
+          :idioma,
+          :imagen,
+          :url,
+          :ambitoid,
+          :paisid,
+          :odsid
+      ); END;`,
+      data
+    );
+
+    console.log("newReport", newReport)
+    const reportId = newReport.ids;
+
+    console.log("reportId", reportId)
+
+    if (data.paisid && data.paisid.length > 0) {
+      for (const paisId of data.paisid) {
+        await db.simpleExecute(
+          `INSERT INTO SCAI_PARTICIPANTE (nnte_reportid, nnte_ambitoid, nnte_paisid) VALUES (:ids, :ambitoid, :paisid)`,
+          { ids: reportId, ambitoid: data.ambitoid, paisid: paisId },
+          { autoCommit: true }
+        );
+      }
+    }
+    if (Array.isArray(data.odsid) && data.odsid.length > 0) {
+      for (const odsid of data.odsid) {
+        await db.simpleExecute(
+          `INSERT INTO SCAI_AUDITORIA_ODS (naod_reportid, naod_odsid) VALUES (:ids, :odsid)`,
+          { ids: reportId, odsid },
+          { autoCommit: true }
+        );
+      }
+    }
+
+    return reportId;
   },
 };

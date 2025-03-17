@@ -215,18 +215,23 @@ module.exports = {
   createInforme: async (req, resp, next) => {
     try {
       //validateParticipants(req.body);
-      console.log("req.files.imagen", req.files.imagen)
+      console.log("req.files.imagen", req.files.imagen);
       if (req.files.imagen == undefined) {
         //deleteFiles(req.files);
         return next(400);
       }
 
-      console.log("req.body.publicacion", moment(req.body.publicacion, 'DD-MM-YYYY', true))
-      req.body.publicacion = moment(req.body.publicacion, 'DD-MM-YYYY', true).toDate();
+      console.log(
+        "req.body.publicacion",
+        moment(req.body.publicacion, "DD-MM-YYYY", true)
+      );
+      req.body.publicacion = moment(
+        req.body.publicacion,
+        "DD-MM-YYYY",
+        true
+      ).toDate();
 
-      
-
-      console.log("req.body.publicacion", req.body.publicacion)
+      console.log("req.body.publicacion", req.body.publicacion);
       /* const dataEvent = Object.assign({}, req.body);
       console.log("dataEvent", dataEvent) */
 
@@ -297,6 +302,137 @@ module.exports = {
       resp.send({ result });
     } catch (err) {
       console.log("Error al crear la auditoria", err.message);
+      if (err instanceof CustomError) {
+        return next(err);
+      }
+      resp.status(500).send({ statusCode: 500, message: err.message });
+    }
+  },
+  createReport: async (req, resp, next) => {
+    try {
+      console.log("recibiendo datos: ", req.body);
+
+      req.body.ids =
+        req.body.ids == undefined || parseInt(req.body.ids) == 0
+          ? 0
+          : parseInt(req.body.ids);
+      req.body.categoria = parseInt(req.body.categoria);
+      req.body.tipo = parseInt(req.body.tipo);
+
+      req.body.fini = moment(req.body.fini, "DD-MM-YYYY", true).isValid()
+        ? moment(req.body.fini, "DD-MM-YYYY").toDate()
+        : null;
+      req.body.ffin = moment(req.body.ffin, "DD-MM-YYYY", true).isValid()
+        ? moment(req.body.ffin, "DD-MM-YYYY").toDate()
+        : null;
+
+      if (!req.body.fini || !req.body.ffin) {
+        console.log("Fechas invalidas");
+        return resp.status(400).send({
+          statusCode: 400,
+          message: "Fecha inválida, por favor use el formato DD-MM-YYYY.",
+        });
+      }
+      req.body.usuario = req.body.usuario;
+      validateAuditoria(req.body);
+
+      // validaciones del informe
+      if (req.files && req.files.imagen == undefined) {
+        return next(400);
+      }
+      req.body.publicacion = moment(
+        req.body.publicacion,
+        "DD-MM-YYYY",
+        true
+      ).toDate();
+      // req.body.imagen = { val: req.body.imagen ? parseInt(req.body.imagen) : null };
+      // const auditoriaResult = await createReport(req.body);
+      // console.log("auditoriaResult", auditoriaResult)
+      // const auditoriaId = auditoriaResult.auditoriaId;
+      // console.log("auditoriaId", auditoriaId);
+
+      console.log("req.files.imagen", req.files.imagen);
+      // req.body.imagen = req.body.imagen;
+
+      const dataEvent = Object.assign({}, req.body);
+      console.log("dataEvent", dataEvent);
+      let result = null;
+      if (req.body.ids == 0) {
+        result = await userdb.createReport(dataEvent);
+      }
+
+      resp.send({ result });
+    } catch (error) {
+      console.log("Error al crear la auditoria", error.message);
+      if (error instanceof CustomError) {
+        return next(error);
+      }
+      resp.status(500).send({ statusCode: 500, message: error.message });
+    }
+  },
+  creationReports: async (req, resp, next) => {
+    try {
+      console.log("recibiendo datos: ", req.body);
+      req.body.ids =
+        req.body.ids == undefined || parseInt(req.body.ids) == 0
+          ? 0
+          : parseInt(req.body.ids);
+      req.body.categoria = parseInt(req.body.categoria);
+      req.body.tipo = parseInt(req.body.tipo);
+      req.body.usuario = parseInt(req.body.usuario);
+      req.body.idioma = parseInt(req.body.idioma);
+      req.body.ambitoid = parseInt(req.body.ambitoid);
+
+      req.body.fini = moment(req.body.fini, "DD-MM-YYYY", true).isValid()
+        ? moment(req.body.fini, "DD-MM-YYYY").toDate()
+        : null;
+      req.body.ffin = moment(req.body.ffin, "DD-MM-YYYY", true).isValid()
+        ? moment(req.body.ffin, "DD-MM-YYYY").toDate()
+        : null;
+      req.body.publicacion = moment(
+        req.body.publicacion,
+        "DD-MM-YYYY",
+        true
+      ).isValid()
+        ? moment(req.body.publicacion, "DD-MM-YYYY").toDate()
+        : null;
+
+      if (!req.body.fini || !req.body.ffin || !req.body.publicacion) {
+        console.log("Fechas invalidas");
+        return resp.status(400).send({
+          statusCode: 400,
+          message: "Fecha inválida, por favor use el formato DD-MM-YYYY.",
+        });
+      }
+
+      // req.body.paisid = Array.isArray(req.body.paisid) ? req.body.paisid.map(Number) : [parseInt(req.body.paisid)];
+      // req.body.odsid = req.body.odsid ? req.body.odsid.map(Number) : [];
+      // validateAuditoria(req.body);
+
+      req.body.paisid = Array.isArray(req.body.paisid)
+        ? req.body.paisid.length > 0
+          ? req.body.paisid[0]
+          : null
+        : req.body.paisid
+        ? parseInt(req.body.paisid)
+        : null;
+
+      req.body.odsid =
+        Array.isArray(req.body.odsid) && req.body.odsid.length > 0
+          ? req.body.odsid[0]
+          : req.body.odsid
+          ? parseInt(req.body.odsid)
+          : null;
+
+      const dataEvent = Object.assign({}, req.body);
+      console.log("Datos antes de enviar:", req.body);
+      console.log("dataEvent", dataEvent);
+
+      const result = await userdb.createReports(dataEvent);
+      console.log("ID generado:", result);
+      resp.send({ result });
+    } catch (err) {
+      console.log("Error al crear el informe", err.message);
       if (err instanceof CustomError) {
         return next(err);
       }
