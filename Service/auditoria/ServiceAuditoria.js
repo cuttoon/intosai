@@ -551,7 +551,9 @@ module.exports = {
       reportId = newReport.ids;
       console.log("Nuevo ID para auditoria:", reportId);
 
-      for (const paisId of paisList) {
+      const eliminate = paisList.slice(1);
+
+      for (const paisId of eliminate) {
         await db.simpleExecute(
           `INSERT INTO SCAI_PARTICIPANTE (nnte_reportid, nnte_ambitoid, nnte_paisid) 
                  VALUES (:ids, :ambitoid, :paisid)`,
