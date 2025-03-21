@@ -413,8 +413,8 @@ module.exports = {
       // validateAuditoria(req.body);
 
       // Eliminar duplicados antes de enviar al servicio
-      req.body.paisid = [...new Set([].concat(req.body.paisid).map(Number).filter(Boolean))];
-      req.body.odsid = [...new Set([].concat(req.body.odsid).map(Number).filter(Boolean))];
+      req.body.paisid = req.body.paisid ? [...new Set(req.body.paisid.split(",").map(Number).filter(n => !isNaN(n) && n > 0))].join(",") || null : null;
+      req.body.odsid = req.body.odsid ? [...new Set(req.body.odsid.split(",").map(Number).filter(n => !isNaN(n) && n > 0))].join(",") || null : null;
 
       
 

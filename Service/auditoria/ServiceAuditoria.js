@@ -512,16 +512,20 @@ module.exports = {
   createReports: async (data) => {
     console.log("data antes de procesar:", data);
 
-    const paisList = [].concat(data.paisid).filter(Boolean);
-    const odsList = [].concat(data.odsid).filter(Boolean);
+    const paisList = data.paisid ? data.paisid.split(",").map(Number).filter(n => !isNaN(n) && n > 0) : [];
+    const odsList = data.odsid ? data.odsid.split(",").map(Number).filter(n => !isNaN(n) && n > 0) : [];
+
 
     let reportId = null;
 
     try {
+      const initialPaisId = paisList.length > 0 ? paisList[0] : null;
+      const initialOdsId = odsList.length > 0 ? odsList[0] : null;
+
       const initialData = {
         ...data,
-        paisid: paisList[0],
-        odsid: odsList[0],
+        paisid: initialPaisId,
+        odsid: initialOdsId,
         url: data.url || null,
         ids: { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT },
       };
