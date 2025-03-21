@@ -42,9 +42,9 @@ const validateObj = (validate, data) => {
         error[ele] = ["Max length is 4000 characters."];
       }
 
-      /* if (ele === "url" && data[ele] && !/^https?:\/\//.test(data[ele])) {
+      if (ele === "url" && data[ele] && !/^https?:\/\//.test(data[ele])) {
         error[ele] = ["URL must start with http or https."];
-      } */
+      }
 
       if (["fini", "ffin", "publicacion"].includes(ele)) {
         if (!/^\d{2}-\d{2}-\d{4}$/.test(data[ele])) {
