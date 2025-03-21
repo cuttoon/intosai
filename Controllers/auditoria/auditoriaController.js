@@ -373,6 +373,9 @@ module.exports = {
   creationReports: async (req, resp, next) => {
     try {
       console.log("recibiendo datos: ", req.body);
+
+      validateAuditoria(req.body);
+
       req.body.ids =
         req.body.ids == undefined || parseInt(req.body.ids) == 0
           ? 0
@@ -413,7 +416,7 @@ module.exports = {
       req.body.paisid = [...new Set([].concat(req.body.paisid).map(Number).filter(Boolean))];
       req.body.odsid = [...new Set([].concat(req.body.odsid).map(Number).filter(Boolean))];
 
-          
+      
 
       const dataEvent = Object.assign({}, req.body);
       console.log("Datos antes de enviar:", req.body);

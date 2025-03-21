@@ -522,6 +522,7 @@ module.exports = {
         ...data,
         paisid: paisList[0],
         odsid: odsList[0],
+        url: data.url || null,
         ids: { type: oracledb.NUMBER, dir: oracledb.BIND_INOUT },
       };
 
