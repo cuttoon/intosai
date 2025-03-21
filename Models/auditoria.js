@@ -42,8 +42,10 @@ const validateObj = (validate, data) => {
         error[ele] = ["Max length is 4000 characters."];
       }
 
-      if (ele === "url" && data[ele] && !/^https?:\/\//.test(data[ele])) {
-        error[ele] = ["URL must start with http or https."];
+      const regexURL = /^(https?:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?(\/[^\s]*)?$/; 
+
+      if (ele === "url" && data[ele] && !regexURL.test(data[ele])) {
+        error[ele] = ["Invalid URL format."];
       }
 
       if (["fini", "ffin", "publicacion"].includes(ele)) {
