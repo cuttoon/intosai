@@ -512,9 +512,8 @@ module.exports = {
   createReports: async (data) => {
     console.log("data antes de procesar:", data);
 
-    const paisList = data.paisid ? data.paisid.split(",").map(Number).filter(n => !isNaN(n) && n > 0) : [];
-    const odsList = data.odsid ? data.odsid.split(",").map(Number).filter(n => !isNaN(n) && n > 0) : [];
-
+    const paisList = data.paisid ? data.paisid.split(",").map(Number).filter((n) => !isNaN(n) && n > 0) : [];
+    const odsList = data.odsid ? data.odsid.split(",").map(Number).filter((n) => !isNaN(n) && n > 0) : [];
 
     let reportId = null;
 
@@ -581,6 +580,81 @@ module.exports = {
       return reportId;
     } catch (error) {
       console.error("Error al ejecutar el procedimiento:", error);
+      throw error;
+    }
+  },
+  updateInforme: async (data) => {
+
+    const paisList = data.paisid ? data.paisid.split(",").map(Number).filter((n) => !isNaN(n) && n > 0) : [];
+    const odsList = data.odsid ? data.odsid.split(",").map(Number).filter((n) => !isNaN(n) && n > 0) : [];
+
+    let reportId = data.ids;
+
+    try {
+
+      const initialPaisId = paisList.length > 0 ? paisList[0] : null;
+      const initialOdsId = odsList.length > 0 ? odsList[0] : null;
+
+      const updateData = {
+        ...data,
+        paisid: initialPaisId,
+        odsid: initialOdsId,
+        url: data.url || null,
+        ids: { dir: oracledb.BIND_INOUT, val: data.ids, type: oracledb.NUMBER },
+      };
+
+      console.log("Enviando datos al procedimiento: ", updateData);
+      await db.procedureExecute(
+        `BEGIN PG_SCAI_CONSULTA.pa_scai_update_informe(
+                          :categoria,
+                          :ffin,
+                          :fini,
+                          :ids,
+                          :objetivo,
+                          :resumen,
+                          :tipo,
+                          :titulo,
+                          :usuario,
+                          :publicacion,
+                          :idioma,
+                          :imagen,
+                          :url,
+                          :ambitoid,
+                          :paisid,
+                          :odsid
+                      ); END;`,
+        updateData
+      );
+
+      reportId = updateData.ids;
+
+      // insertar paises
+      const additionalPais = paisList.slice(1);
+      for (const paisid of additionalPais) {
+        await db.simpleExecute(
+            `INSERT INTO SCAI_PARTICIPANTE (nnte_reportid, nnte_ambitoid, nnte_paisid, dnte_updatedat) 
+             VALUES (:ids, :ambitoid, :paisid, sysdate)`,
+            { ids: reportId, ambitoid: data.ambitoid, paisid: paisid },
+            { autoCommit: true }
+        );
+    }
+
+    const additionalOds = odsList.slice(1);
+        for (const odsid of additionalOds) {
+            await db.simpleExecute(
+                `INSERT INTO SCAI_AUDITORIA_ODS (naod_reportid, naod_odsid, daod_updatedat) 
+                 VALUES (:ids, :odsid, sysdate)`,
+                { ids: reportId, odsid: odsid },
+                { autoCommit: true }
+            );
+        }
+
+      return reportId;
+    } catch (error) {
+      console.error(
+        "Error al ejecutar el procedimiento de actualización:",
+        error
+      );
       throw error;
     }
   },

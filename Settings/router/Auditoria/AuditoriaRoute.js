@@ -9,6 +9,7 @@ router.get('/getAllAuditoria',Filter, Auditoria.getallauditoria);
 // router.get('/getSimpleSearch',Filter, Auditoria.getSimpleSearch);
 router.post('/creationReports',Filter, checkFiles, Auditoria.creationReports);
 // router.get('/getAdvanceSearch',Filter, Auditoria.getAdvanceSearch);
+router.post('/updateReports', checkFiles, Auditoria.updateReports);
 
 router.post('/getSimpleSearch', Auditoria.getSimpleSearch);
 

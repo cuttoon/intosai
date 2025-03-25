@@ -407,16 +407,27 @@ module.exports = {
           message: "Fecha inválida, por favor use el formato DD-MM-YYYY.",
         });
       }
-
-      // req.body.paisid = Array.isArray(req.body.paisid) ? req.body.paisid.map(Number) : [parseInt(req.body.paisid)];
-      // req.body.odsid = req.body.odsid ? req.body.odsid.map(Number) : [];
-      // validateAuditoria(req.body);
-
       // Eliminar duplicados antes de enviar al servicio
-      req.body.paisid = req.body.paisid ? [...new Set(req.body.paisid.split(",").map(Number).filter(n => !isNaN(n) && n > 0))].join(",") || null : null;
-      req.body.odsid = req.body.odsid ? [...new Set(req.body.odsid.split(",").map(Number).filter(n => !isNaN(n) && n > 0))].join(",") || null : null;
-
-      
+      req.body.paisid = req.body.paisid
+        ? [
+            ...new Set(
+              req.body.paisid
+                .split(",")
+                .map(Number)
+                .filter((n) => !isNaN(n) && n > 0)
+            ),
+          ].join(",") || null
+        : null;
+      req.body.odsid = req.body.odsid
+        ? [
+            ...new Set(
+              req.body.odsid
+                .split(",")
+                .map(Number)
+                .filter((n) => !isNaN(n) && n > 0)
+            ),
+          ].join(",") || null
+        : null;
 
       const dataEvent = Object.assign({}, req.body);
       console.log("Datos antes de enviar:", req.body);
@@ -427,6 +438,76 @@ module.exports = {
       resp.send({ result });
     } catch (err) {
       console.log("Error al crear el informe", err.message);
+      if (err instanceof CustomError) {
+        return next(err);
+      }
+      resp.status(500).send({ statusCode: 500, message: err.message });
+    }
+  },
+
+  updateReports: async (req, resp, next) => {
+    try {
+
+      validateAuditoria(req.body);
+
+      req.body.ids = parseInt(req.body.ids);
+      req.body.categoria = parseInt(req.body.categoria);
+      req.body.tipo = parseInt(req.body.tipo);
+      req.body.usuario = parseInt(req.body.usuario);
+      req.body.idioma = parseInt(req.body.idioma);
+      req.body.ambitoid = parseInt(req.body.ambitoid);
+
+      req.body.fini = moment(req.body.fini, "DD-MM-YYYY", true).isValid()
+        ? moment(req.body.fini, "DD-MM-YYYY").toDate()
+        : null;
+      req.body.ffin = moment(req.body.ffin, "DD-MM-YYYY", true).isValid()
+        ? moment(req.body.ffin, "DD-MM-YYYY").toDate()
+        : null;
+      req.body.publicacion = moment(
+        req.body.publicacion,
+        "DD-MM-YYYY",
+        true
+      ).isValid()
+        ? moment(req.body.publicacion, "DD-MM-YYYY").toDate()
+        : null;
+
+      if (!req.body.fini || !req.body.ffin || !req.body.publicacion) {
+        return resp.status(400).send({
+          statusCode: 400,
+          message: "Fecha inválida, por favor use el formato DD-MM-YYYY.",
+        });
+      }
+
+      req.body.paisid = req.body.paisid
+        ? [
+            ...new Set(
+              req.body.paisid
+                .split(",")
+                .map(Number)
+                .filter((n) => !isNaN(n) && n > 0)
+            ),
+          ].join(",") || null
+        : null;
+      req.body.odsid = req.body.odsid
+        ? [
+            ...new Set(
+              req.body.odsid
+                .split(",")
+                .map(Number)
+                .filter((n) => !isNaN(n) && n > 0)
+            ),
+          ].join(",") || null
+        : null;
+
+      const dataEvent = Object.assign({}, req.body);
+
+
+      const result = await userdb.updateInforme(dataEvent);
+      console.log("Informe actualizado con ID:", result);
+
+      resp.send({ result });
+    } catch (err) {
+      console.log("Error al actualizar el informe", err.message);
       if (err instanceof CustomError) {
         return next(err);
       }
