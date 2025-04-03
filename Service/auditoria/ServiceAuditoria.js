@@ -600,6 +600,7 @@ module.exports = {
         paisid: initialPaisId,
         odsid: initialOdsId,
         url: data.url || null,
+        imagen: data.imagen || null,
         ids: { dir: oracledb.BIND_INOUT, val: data.ids, type: oracledb.NUMBER },
       };
 

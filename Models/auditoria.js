@@ -13,7 +13,6 @@ const auditoria = {
   ffin: "string",
   ids: "number",
   publicacion: "string",
-  imagen: "string",
   idioma: "number",
   url: "string",
   ambitoid: "number",
