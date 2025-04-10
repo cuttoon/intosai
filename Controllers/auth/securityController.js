@@ -45,6 +45,7 @@ module.exports = {
           IdCuenta: datavalidEmail.NUSU_ID,
           IdRol: datavalidEmail.NUSU_ROLID,
           Nombre: datavalidEmail.NOMBRE,
+          Apellido: datavalidEmail.APELLIDO || "",
           Token: token,
         });
       }
