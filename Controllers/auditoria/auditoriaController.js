@@ -30,6 +30,13 @@ module.exports = {
   getAdvanceSearch: async (req, resp, next) => {
     try {
       const auditoria = await userdb.getAdvanceSearch(req.body);
+
+      if(!auditoria || auditoria.length === 0) {
+        return resp.status(200).send({
+          message: 'No se encontraron resultados',
+          result: []
+        });
+      }
       resp.send({ result: auditoria });
     } catch (err) {
       resp.status(500).send({ statusCode: 500, message: err.message });
@@ -306,68 +313,6 @@ module.exports = {
         return next(err);
       }
       resp.status(500).send({ statusCode: 500, message: err.message });
-    }
-  },
-  createReport: async (req, resp, next) => {
-    try {
-      console.log("recibiendo datos: ", req.body);
-
-      req.body.ids =
-        req.body.ids == undefined || parseInt(req.body.ids) == 0
-          ? 0
-          : parseInt(req.body.ids);
-      req.body.categoria = parseInt(req.body.categoria);
-      req.body.tipo = parseInt(req.body.tipo);
-
-      req.body.fini = moment(req.body.fini, "DD-MM-YYYY", true).isValid()
-        ? moment(req.body.fini, "DD-MM-YYYY").toDate()
-        : null;
-      req.body.ffin = moment(req.body.ffin, "DD-MM-YYYY", true).isValid()
-        ? moment(req.body.ffin, "DD-MM-YYYY").toDate()
-        : null;
-
-      if (!req.body.fini || !req.body.ffin) {
-        console.log("Fechas invalidas");
-        return resp.status(400).send({
-          statusCode: 400,
-          message: "Fecha inválida, por favor use el formato DD-MM-YYYY.",
-        });
-      }
-      req.body.usuario = req.body.usuario;
-      validateAuditoria(req.body);
-
-      // validaciones del informe
-      if (req.files && req.files.imagen == undefined) {
-        return next(400);
-      }
-      req.body.publicacion = moment(
-        req.body.publicacion,
-        "DD-MM-YYYY",
-        true
-      ).toDate();
-      // req.body.imagen = { val: req.body.imagen ? parseInt(req.body.imagen) : null };
-      // const auditoriaResult = await createReport(req.body);
-      // console.log("auditoriaResult", auditoriaResult)
-      // const auditoriaId = auditoriaResult.auditoriaId;
-      // console.log("auditoriaId", auditoriaId);
-
-      console.log("req.files.imagen", req.files.imagen);
-      // req.body.imagen = req.body.imagen;
-
-      const dataEvent = Object.assign({}, req.body);
-      console.log("dataEvent", dataEvent);
-      let result = null;
-      if (req.body.ids == 0) {
-        result = await userdb.createReport(dataEvent);
-      }
-
-      resp.send({ result });
-    } catch (error) {
-      console.log("Error al crear la auditoria", error.message);
-      if (error instanceof CustomError) {
-        return next(error);
-      }
-      resp.status(500).send({ statusCode: 500, message: error.message });
     }
   },
   creationReports: async (req, resp, next) => {
